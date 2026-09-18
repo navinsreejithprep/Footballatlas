@@ -86,7 +86,8 @@ interface FdStandingTableRow {
 }
 
 interface FdStandingsResponse {
-  competition: { name: string; code: string; area: { name: string } };
+  area?: { name: string };
+  competition: { name: string; code: string };
   season: { startDate: string; endDate: string };
   standings: Array<{ type: string; table: FdStandingTableRow[] }>;
 }
@@ -100,10 +101,30 @@ interface FdMatch {
   homeTeam: FdTeam;
   awayTeam: FdTeam;
   score: { fullTime: { home: number | null; away: number | null } };
+  competition?: { code: string };
 }
 
 interface FdMatchesResponse {
   matches: FdMatch[];
+}
+
+// /v4/matches (all leagues in one request) rejects periods longer than 10 days.
+const MAX_MATCHES_PERIOD_DAYS = 10;
+
+function splitDateRange(from: string, to: string): Array<{ from: string; to: string }> {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const windows: Array<{ from: string; to: string }> = [];
+  const end = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
+  let start = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
+  while (start <= end) {
+    const stop = Math.min(start + (MAX_MATCHES_PERIOD_DAYS - 1) * DAY_MS, end);
+    windows.push({
+      from: new Date(start).toISOString().slice(0, 10),
+      to: new Date(stop).toISOString().slice(0, 10),
+    });
+    start = stop + DAY_MS;
+  }
+  return windows;
 }
 
 function toTeam(t: FdTeam, leagueCode: LeagueCode): Team {
@@ -175,7 +196,7 @@ export const footballDataOrgProvider: FootballProvider = {
       league: {
         code,
         name: data.competition.name,
-        country: data.competition.area.name,
+        country: data.area?.name ?? LEAGUES[code].country,
         season: `${data.season.startDate.slice(0, 4)}/${data.season.endDate.slice(0, 4)}`,
       },
       standings: table.map((row) => toStanding(row, code)),
@@ -184,26 +205,48 @@ export const footballDataOrgProvider: FootballProvider = {
   },
 
   async getMatches(params: GetMatchesParams): Promise<MatchesResult> {
-    const codes: LeagueCode[] = params.leagueCode
-      ? [params.leagueCode]
-      : (Object.keys(LEAGUES) as LeagueCode[]);
-
-    const query = new URLSearchParams();
-    if (params.dateFrom) query.set("dateFrom", params.dateFrom.slice(0, 10));
-    if (params.dateTo) query.set("dateTo", params.dateTo.slice(0, 10));
+    const dateQuery = (from?: string, to?: string) => {
+      const query = new URLSearchParams();
+      if (from) query.set("dateFrom", from.slice(0, 10));
+      if (to) query.set("dateTo", to.slice(0, 10));
+      return query.toString();
+    };
 
     // Live/today data should be much fresher than standings.
     const revalidate = 60;
 
-    const results = await Promise.all(
-      codes.map((code) =>
-        fdFetch<FdMatchesResponse>(`/competitions/${code}/matches?${query.toString()}`, revalidate).then(
-          (data) => data.matches.map((m) => toMatch(m, code))
+    let matches: Match[];
+    if (params.leagueCode) {
+      const code = params.leagueCode;
+      const data = await fdFetch<FdMatchesResponse>(
+        `/competitions/${code}/matches?${dateQuery(params.dateFrom, params.dateTo)}`,
+        revalidate
+      );
+      matches = data.matches.map((m) => toMatch(m, code));
+    } else {
+      // The free tier allows ~10 requests/minute, so fetch every league in one
+      // request per date window rather than one request per league.
+      const competitions = Object.keys(LEAGUES).join(",");
+      const windows =
+        params.dateFrom && params.dateTo
+          ? splitDateRange(params.dateFrom, params.dateTo)
+          : [{ from: params.dateFrom, to: params.dateTo }];
+      const responses = await Promise.all(
+        windows.map((w) =>
+          fdFetch<FdMatchesResponse>(
+            `/matches?competitions=${competitions}&${dateQuery(w.from, w.to)}`,
+            revalidate
+          )
         )
-      )
-    );
+      );
+      matches = responses.flatMap((r) =>
+        r.matches.flatMap((m) => {
+          const code = m.competition?.code;
+          return code && code in LEAGUES ? [toMatch(m, code as LeagueCode)] : [];
+        })
+      );
+    }
 
-    let matches = results.flat();
     if (params.status?.length) {
       matches = matches.filter((m) => params.status!.includes(m.status));
     }

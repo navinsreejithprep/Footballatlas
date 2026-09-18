@@ -19,20 +19,28 @@ import { footballDataOrgProvider } from "./api-provider";
 
 let cached: FootballProvider | null = null;
 
+// The fallbacks below hide failures from the UI, so record why they happened
+// (rate limit, bad key, network) where Vercel's runtime logs can show it.
+function logFallback(scope: string, err: unknown) {
+  console.error(`[football] ${scope} failed, using demo data:`, err instanceof Error ? err.message : err);
+}
+
 function withFallback(real: FootballProvider): FootballProvider {
   return {
     sourceName: real.sourceName,
     async getLeagues() {
       try {
         return await real.getLeagues();
-      } catch {
+      } catch (err) {
+        logFallback("getLeagues", err);
         return mockFootballProvider.getLeagues();
       }
     },
     async getStandings(code: LeagueCode): Promise<StandingsResult> {
       try {
         return await real.getStandings(code);
-      } catch {
+      } catch (err) {
+        logFallback(`getStandings(${code})`, err);
         const fallback = await mockFootballProvider.getStandings(code);
         return { ...fallback, meta: { ...fallback.meta, note: "Live data temporarily unavailable — showing demo data" } };
       }
@@ -40,7 +48,8 @@ function withFallback(real: FootballProvider): FootballProvider {
     async getMatches(params: GetMatchesParams): Promise<MatchesResult> {
       try {
         return await real.getMatches(params);
-      } catch {
+      } catch (err) {
+        logFallback("getMatches", err);
         const fallback = await mockFootballProvider.getMatches(params);
         return { ...fallback, meta: { ...fallback.meta, note: "Live data temporarily unavailable — showing demo data" } };
       }
@@ -50,7 +59,8 @@ function withFallback(real: FootballProvider): FootballProvider {
         const result = await real.getTeam(teamId);
         if (result) return result;
         return mockFootballProvider.getTeam(teamId);
-      } catch {
+      } catch (err) {
+        logFallback(`getTeam(${teamId})`, err);
         return mockFootballProvider.getTeam(teamId);
       }
     },
@@ -58,7 +68,8 @@ function withFallback(real: FootballProvider): FootballProvider {
       try {
         const news = await real.getNews();
         return news.length ? news : mockFootballProvider.getNews();
-      } catch {
+      } catch (err) {
+        logFallback("getNews", err);
         return mockFootballProvider.getNews();
       }
     },
