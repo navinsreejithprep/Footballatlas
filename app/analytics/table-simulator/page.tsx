@@ -6,6 +6,7 @@ import type { LeagueCode, Standing, StandingsResult } from "@/lib/football/types
 import { SectionCard } from "@/components/SectionCard";
 import { StandingsTable } from "@/components/StandingsTable";
 import { DataMetaBadge } from "@/components/DataMetaBadge";
+import { PageHero } from "@/components/PageHero";
 
 type Outcome = "HOME_WIN" | "DRAW" | "AWAY_WIN";
 
@@ -100,12 +101,11 @@ export default function TableSimulatorPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Table Simulator</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Scenario simulation — not a prediction. Pick hypothetical results and see the table recalculate.
-        </p>
-      </div>
+      <PageHero
+        eyebrow="What if…?"
+        title="Table Simulator"
+        lead="Scenario simulation — not a prediction. Pick hypothetical results and see the table recalculate."
+      />
 
       <div className="flex flex-wrap gap-2">
         {(Object.keys(LEAGUES) as LeagueCode[]).map((code) => (
@@ -113,10 +113,10 @@ export default function TableSimulatorPage() {
             key={code}
             onClick={() => setLeague(code)}
             className={[
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+              "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
               league === code
-                ? "border-accent bg-accent-soft text-accent"
-                : "border-border text-text-muted hover:bg-surface-raised hover:text-text",
+                ? "bg-brand border-transparent text-white shadow-sm"
+                : "border-border bg-white text-text-muted hover:border-accent/40 hover:text-accent",
             ].join(" ")}
           >
             {LEAGUES[code].flag} {LEAGUES[code].name}
@@ -138,7 +138,7 @@ export default function TableSimulatorPage() {
                 <select
                   value={homeTeamId}
                   onChange={(e) => setHomeTeamId(e.target.value)}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm"
                 >
                   {data.standings.map((s) => (
                     <option key={s.team.id} value={s.team.id}>
@@ -152,7 +152,7 @@ export default function TableSimulatorPage() {
                 <select
                   value={outcome}
                   onChange={(e) => setOutcome(e.target.value as Outcome)}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm"
                 >
                   <option value="HOME_WIN">Home win</option>
                   <option value="DRAW">Draw</option>
@@ -164,7 +164,7 @@ export default function TableSimulatorPage() {
                 <select
                   value={awayTeamId}
                   onChange={(e) => setAwayTeamId(e.target.value)}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm"
                 >
                   {data.standings.map((s) => (
                     <option key={s.team.id} value={s.team.id}>
@@ -175,7 +175,7 @@ export default function TableSimulatorPage() {
               </div>
               <button
                 onClick={addScenario}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                className="bg-brand rounded-lg px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
               >
                 Add to scenario
               </button>

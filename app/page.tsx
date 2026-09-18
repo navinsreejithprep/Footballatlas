@@ -6,6 +6,9 @@ import { MatchCard } from "@/components/MatchCard";
 import { MomentumList, ProprietaryBadge } from "@/components/MomentumList";
 import { DataMetaBadge } from "@/components/DataMetaBadge";
 import { StandingsTable } from "@/components/StandingsTable";
+import { PageHero } from "@/components/PageHero";
+import { TeamCrest } from "@/components/TeamCrest";
+import { LEAGUE_THEMES } from "@/lib/league-theme";
 
 export const revalidate = 60;
 
@@ -32,15 +35,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Europe at a glance</h1>
-          <span className="text-xs text-text-muted">
-            {now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-          </span>
+      <PageHero
+        eyebrow={now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        title="Europe at a glance"
+        lead="Live scores, tables and momentum across the Premier League, La Liga, Serie A, Bundesliga and Ligue 1."
+      >
+        <div className="mt-1 flex flex-wrap items-stretch gap-3">
+          <HeroStat label="Live now" value={liveMatches.meta.note ? "—" : liveMatches.matches.length} pulse={liveMatches.matches.length > 0} />
+          <HeroStat label="Fixtures today" value={todayMatches.meta.note ? "—" : todayMatches.matches.length} />
+          <HeroStat label="Leagues" value={ALL_LEAGUES.length} />
         </div>
-        <DataMetaBadge meta={featuredLeague.meta} />
-      </div>
+        <div className="mt-1">
+          <DataMetaBadge meta={featuredLeague.meta} onBrand />
+        </div>
+      </PageHero>
 
       <SectionCard
         title={liveMatches.matches.length ? "Live right now" : "Today's fixtures"}
@@ -64,12 +72,13 @@ export default async function DashboardPage() {
             {standingsAll.map((result) => (
               <div key={result.league.code}>
                 <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <Link href={`/leagues/${result.league.code}`} className="font-medium hover:text-accent">
+                  <Link href={`/leagues/${result.league.code}`} className="flex items-center gap-2 font-bold hover:text-accent">
+                    <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LEAGUE_THEMES[result.league.code].solid }} />
                     {LEAGUES[result.league.code].flag} {result.league.name}
                   </Link>
                   <span className="text-xs text-text-muted">Leader: {result.standings[0]?.team.shortName ?? "—"}</span>
                 </div>
-                <StandingsTable standings={result.standings.slice(0, 3)} />
+                <StandingsTable standings={result.standings.slice(0, 3)} compact />
               </div>
             ))}
           </div>
@@ -94,12 +103,20 @@ export default async function DashboardPage() {
             const second = result.standings[1];
             const gap = leader && second ? leader.points - second.points : null;
             return (
-              <div key={result.league.code} className="rounded-xl border border-border p-4">
-                <p className="text-xs text-text-muted">{LEAGUES[result.league.code].name}</p>
-                <p className="mt-1 text-lg font-semibold">{leader?.team.shortName ?? "—"}</p>
-                <p className="mt-1 text-xs text-text-muted">
-                  {leader?.points ?? "—"} pts · {gap != null ? `${gap} pt gap to 2nd` : "—"} · {leader?.playedGames ?? "—"} played
+              <div key={result.league.code} className="relative overflow-hidden rounded-xl border border-border bg-white p-4 pt-5">
+                <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ backgroundImage: LEAGUE_THEMES[result.league.code].gradient }} />
+                <p className="text-xs font-bold uppercase tracking-wide text-text-muted">
+                  {LEAGUES[result.league.code].flag} {LEAGUES[result.league.code].name}
                 </p>
+                <div className="mt-2 flex items-center gap-3">
+                  {leader && <TeamCrest team={leader.team} size={36} />}
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-extrabold">{leader?.team.shortName ?? "—"}</p>
+                    <p className="text-xs text-text-muted">
+                      <span className="font-bold text-accent">{leader?.points ?? "—"} pts</span> · {gap != null ? `${gap} pt gap to 2nd` : "—"} · {leader?.playedGames ?? "—"} played
+                    </p>
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -118,17 +135,45 @@ async function NewsPreview() {
   const news = await provider.getNews();
   if (!news.length) return <p className="text-sm text-text-muted">No news available.</p>;
   return (
-    <ul className="flex flex-col gap-3">
-      {news.slice(0, 4).map((n) => (
-        <li key={n.id} className="border-b border-border/60 pb-3 last:border-b-0 last:pb-0">
-          <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:text-accent hover:underline">
-            {n.headline}
+    <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {news.slice(0, 6).map((n) => (
+        <li key={n.id}>
+          <a
+            href={n.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card-hover flex h-full flex-col gap-2 rounded-xl border border-border bg-white p-4"
+          >
+            <span className="flex flex-wrap items-center gap-2 text-xs">
+              <span className={`rounded-full px-2.5 py-0.5 font-bold ${SOURCE_STYLES[n.source] ?? "bg-accent-soft text-accent"}`}>
+                {n.source}
+              </span>
+              <span className="text-text-muted">
+                {new Date(n.publishedAt).toLocaleDateString([], { day: "numeric", month: "short" })} · {n.category}
+              </span>
+            </span>
+            <span className="text-sm font-bold leading-snug">{n.headline}</span>
+            {n.summary && <span className="line-clamp-2 text-xs text-text-muted">{n.summary}</span>}
           </a>
-          <p className="mt-0.5 text-xs text-text-muted">
-            {n.source} · {new Date(n.publishedAt).toLocaleDateString()} · {n.category}
-          </p>
         </li>
       ))}
     </ul>
+  );
+}
+
+const SOURCE_STYLES: Record<string, string> = {
+  "BBC Sport": "bg-[#ffe680] text-[#4a3800]",
+  "The Guardian": "bg-[#dbe8ff] text-[#052962]",
+};
+
+function HeroStat({ label, value, pulse = false }: { label: string; value: string | number; pulse?: boolean }) {
+  return (
+    <div className="min-w-28 rounded-2xl bg-white/15 px-4 py-2.5 ring-1 ring-white/25 backdrop-blur">
+      <p className="flex items-center gap-2 text-2xl font-extrabold tabular-nums">
+        {pulse && <span aria-hidden className="h-2 w-2 rounded-full bg-white motion-safe:animate-pulse" />}
+        {value}
+      </p>
+      <p className="text-xs font-semibold text-white/90">{label}</p>
+    </div>
   );
 }

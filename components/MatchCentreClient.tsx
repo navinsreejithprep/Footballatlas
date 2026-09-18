@@ -55,10 +55,10 @@ export function MatchCentreClient({ matches }: { matches: Match[] }) {
               key={f.code}
               onClick={() => setLeagueFilter(f.code)}
               className={[
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
                 leagueFilter === f.code
-                  ? "border-accent bg-accent-soft text-accent"
-                  : "border-border text-text-muted hover:bg-surface-raised hover:text-text",
+                  ? "bg-brand border-transparent text-white shadow-sm"
+                  : "border-border bg-white text-text-muted hover:border-accent/40 hover:text-accent",
               ].join(" ")}
             >
               {f.label}
@@ -69,7 +69,7 @@ export function MatchCentreClient({ matches }: { matches: Match[] }) {
           value={teamQuery}
           onChange={(e) => setTeamQuery(e.target.value)}
           placeholder="Filter by team…"
-          className="w-full rounded-full border border-border bg-surface px-4 py-1.5 text-sm outline-none placeholder:text-text-muted focus:border-accent sm:w-56"
+          className="w-full rounded-full border border-border bg-white px-4 py-2 text-sm shadow-sm outline-none placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 sm:w-64"
         />
       </div>
 

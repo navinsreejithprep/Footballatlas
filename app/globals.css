@@ -1,17 +1,27 @@
 @import "tailwindcss";
 
+/*
+ * Football Atlas theme — light, high-energy.
+ * Text tokens (text, text-muted, accent, positive, negative, gold) are all
+ * picked to stay >= 4.5:1 on the white card surface.
+ */
 :root {
-  --atlas-bg: #0b0d12;
-  --atlas-surface: #12151c;
-  --atlas-surface-raised: #171b24;
-  --atlas-border: #232733;
-  --atlas-text: #e9ebf1;
-  --atlas-text-muted: #8b92a3;
-  --atlas-accent: #5b7cff;
-  --atlas-accent-soft: #1a2140;
-  --atlas-positive: #3ecf8e;
-  --atlas-negative: #e5615a;
-  --atlas-gold: #d4af6a;
+  --atlas-bg: #f2f4ff;
+  --atlas-surface: #ffffff;
+  --atlas-surface-raised: #eef1ff;
+  --atlas-border: #dfe3f7;
+  --atlas-text: #0e1438;
+  --atlas-text-muted: #55608c;
+  --atlas-accent: #5030f0;
+  --atlas-accent-soft: #ebe7ff;
+  --atlas-positive: #08805a;
+  --atlas-negative: #e11d48;
+  --atlas-gold: #b45309;
+
+  --atlas-brand-from: #4527e8;
+  --atlas-brand-via: #7a2ff0;
+  --atlas-brand-to: #d6247a;
+  --atlas-brand-gradient: linear-gradient(115deg, var(--atlas-brand-from) 0%, var(--atlas-brand-via) 52%, var(--atlas-brand-to) 100%);
 }
 
 @theme inline {
@@ -30,18 +40,71 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background: var(--atlas-bg);
+  background-color: var(--atlas-bg);
+  background-image:
+    radial-gradient(900px 420px at 8% -8%, #e2dbff 0%, transparent 62%),
+    radial-gradient(760px 420px at 100% 0%, #ffe0ee 0%, transparent 58%),
+    radial-gradient(700px 500px at 50% 110%, #dff5ff 0%, transparent 60%);
+  background-repeat: no-repeat;
   color: var(--atlas-text);
   font-family: var(--font-sans);
 }
 
 ::selection {
-  background: var(--atlas-accent-soft);
-  color: var(--atlas-text);
+  background: var(--atlas-accent);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--atlas-accent);
+  outline-offset: 2px;
+}
+
+/* Brand surfaces */
+.bg-brand {
+  background-image: var(--atlas-brand-gradient);
+}
+
+.card-shadow {
+  box-shadow:
+    0 1px 2px rgba(14, 20, 56, 0.05),
+    0 12px 28px -16px rgba(80, 48, 240, 0.28);
+}
+
+.card-hover {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(14, 20, 56, 0.06),
+    0 18px 34px -16px rgba(80, 48, 240, 0.4);
+}
+
+/* Faint pitch markings for hero banners */
+.pitch-lines {
+  background-image:
+    radial-gradient(circle at 50% 50%, transparent 0 58px, rgba(255, 255, 255, 0.16) 58px 60px, transparent 60px),
+    linear-gradient(90deg, transparent calc(50% - 1px), rgba(255, 255, 255, 0.16) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+  background-repeat: no-repeat;
+  background-position: right 8% center, right 8% center;
+  background-size: 260px 260px, 260px 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-hover {
+    transition: none;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
 }
 
 .scrollbar-thin::-webkit-scrollbar {

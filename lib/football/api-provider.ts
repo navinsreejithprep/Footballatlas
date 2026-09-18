@@ -117,16 +117,24 @@ interface FdMatchesResponse {
   matches: FdMatch[];
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 // /v4/matches (all leagues in one request) rejects periods longer than 10 days.
-const MAX_MATCHES_PERIOD_DAYS = 10;
+// Callers pass an inclusive `dateTo`, but the API treats it as exclusive (see
+// nextDay), so each window covers 9 days to keep the request itself under 10.
+const MATCHES_WINDOW_DAYS = 9;
+
+/** The API's `dateTo` is exclusive: dateFrom == dateTo returns nothing. Ask for the day after the last day wanted. */
+function nextDay(date: string): string {
+  return new Date(Date.parse(`${date.slice(0, 10)}T00:00:00Z`) + DAY_MS).toISOString().slice(0, 10);
+}
 
 function splitDateRange(from: string, to: string): Array<{ from: string; to: string }> {
-  const DAY_MS = 24 * 60 * 60 * 1000;
   const windows: Array<{ from: string; to: string }> = [];
   const end = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
   let start = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
   while (start <= end) {
-    const stop = Math.min(start + (MAX_MATCHES_PERIOD_DAYS - 1) * DAY_MS, end);
+    const stop = Math.min(start + (MATCHES_WINDOW_DAYS - 1) * DAY_MS, end);
     windows.push({
       from: new Date(start).toISOString().slice(0, 10),
       to: new Date(stop).toISOString().slice(0, 10),
@@ -217,7 +225,7 @@ export const footballDataOrgProvider: FootballProvider = {
     const dateQuery = (from?: string, to?: string) => {
       const query = new URLSearchParams();
       if (from) query.set("dateFrom", from.slice(0, 10));
-      if (to) query.set("dateTo", to.slice(0, 10));
+      if (to) query.set("dateTo", nextDay(to));
       return query.toString();
     };
 

@@ -1,5 +1,6 @@
 import { getFootballProvider } from "@/lib/football";
 import { DataMetaBadge } from "@/components/DataMetaBadge";
+import { PageHero } from "@/components/PageHero";
 import { MatchCentreClient } from "@/components/MatchCentreClient";
 
 export const revalidate = 60;
@@ -14,13 +15,13 @@ export default async function MatchesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Match Centre</h1>
-        <p className="mt-1 text-sm text-text-muted">Live, today's, upcoming and recent matches across Europe's top five leagues.</p>
-        <div className="mt-2">
-          <DataMetaBadge meta={result.meta} />
-        </div>
-      </div>
+      <PageHero
+        eyebrow="Live · Today · Upcoming · Results"
+        title="Match Centre"
+        lead="Every match across Europe’s top five leagues, filterable by league and club."
+      >
+        <DataMetaBadge meta={result.meta} onBrand />
+      </PageHero>
 
       <MatchCentreClient matches={result.matches} />
     </div>

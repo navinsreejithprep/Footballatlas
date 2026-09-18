@@ -3,6 +3,8 @@ import { getFootballProvider, LEAGUES, type LeagueCode } from "@/lib/football";
 import { computeMomentumTable } from "@/lib/football/momentum";
 import { StandingsTable } from "@/components/StandingsTable";
 import { DataMetaBadge } from "@/components/DataMetaBadge";
+import { PageHero } from "@/components/PageHero";
+import { LEAGUE_THEMES } from "@/lib/league-theme";
 import { SectionCard } from "@/components/SectionCard";
 import { MomentumList, ProprietaryBadge } from "@/components/MomentumList";
 import { MatchCard } from "@/components/MatchCard";
@@ -37,21 +39,24 @@ export default async function LeagueDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-2xl">{LEAGUES[code].flag}</span>
-          <h1 className="text-2xl font-semibold tracking-tight">{standingsResult.league.name}</h1>
-          <span className="text-sm text-text-muted">{standingsResult.league.season}</span>
-        </div>
-        <div className="mt-2">
-          <DataMetaBadge meta={standingsResult.meta} />
-        </div>
-      </div>
+      <PageHero
+        gradient={LEAGUE_THEMES[code].gradient}
+        eyebrow={`${LEAGUES[code].country}${standingsResult.league.season ? ` · ${standingsResult.league.season}` : ""}`}
+        title={
+          <>
+            <span aria-hidden className="mr-3">{LEAGUES[code].flag}</span>
+            {standingsResult.league.name}
+          </>
+        }
+      >
+        <DataMetaBadge meta={standingsResult.meta} onBrand />
+      </PageHero>
 
       <SectionCard title="Table">
         <StandingsTable standings={standingsResult.standings} />
         <p className="mt-3 text-xs text-text-muted">
-          Green edge: European qualification zone (top 4). Red edge: relegation zone (bottom 3).
+          <span className="font-semibold text-positive">Green</span>: European qualification zone (top 4).{" "}
+          <span className="font-semibold text-negative">Red</span>: relegation zone (bottom 3).
         </p>
       </SectionCard>
 
@@ -60,7 +65,7 @@ export default async function LeagueDetailPage({
           {recent.length ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {recent.map((m) => (
-                <MatchCard key={m.id} match={m} />
+                <MatchCard key={m.id} match={m} showLeague={false} />
               ))}
             </div>
           ) : (
@@ -72,7 +77,7 @@ export default async function LeagueDetailPage({
           {upcoming.length ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {upcoming.map((m) => (
-                <MatchCard key={m.id} match={m} />
+                <MatchCard key={m.id} match={m} showLeague={false} />
               ))}
             </div>
           ) : (

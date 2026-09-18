@@ -4,6 +4,9 @@ import { computeMomentum } from "@/lib/football/momentum";
 import { SectionCard } from "@/components/SectionCard";
 import { MatchCard } from "@/components/MatchCard";
 import { DataMetaBadge } from "@/components/DataMetaBadge";
+import { PageHero } from "@/components/PageHero";
+import { TeamCrest } from "@/components/TeamCrest";
+import { LEAGUE_THEMES } from "@/lib/league-theme";
 import { ProprietaryBadge } from "@/components/MomentumList";
 
 export const revalidate = 60;
@@ -30,17 +33,20 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{team.name}</h1>
-          <span className="text-sm text-text-muted">
-            {LEAGUES[team.leagueCode].flag} {LEAGUES[team.leagueCode].name}
+      <PageHero
+        gradient={LEAGUE_THEMES[team.leagueCode].gradient}
+        eyebrow={`${LEAGUES[team.leagueCode].flag} ${LEAGUES[team.leagueCode].name}`}
+        title={
+          <span className="flex items-center gap-4">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-md">
+              <TeamCrest team={team} size={44} />
+            </span>
+            {team.name}
           </span>
-        </div>
-        <div className="mt-2">
-          <DataMetaBadge meta={meta} />
-        </div>
-      </div>
+        }
+      >
+        <DataMetaBadge meta={meta} onBrand />
+      </PageHero>
 
       {standing && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -58,7 +64,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
           </div>
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-3xl font-semibold tabular-nums">{momentum.momentumIndex}</p>
+              <p className="text-4xl font-extrabold tabular-nums text-accent">{momentum.momentumIndex}</p>
               <p className="text-xs text-text-muted">Momentum Index</p>
             </div>
             <div>
@@ -77,8 +83,8 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
         <SectionCard title="Recent matches">
           {recentMatches.length ? (
             <div className="flex flex-col gap-3">
-              {recentMatches.map((m) => (
-                <MatchCard key={m.id} match={m} />
+              {recentMatches.slice(0, 5).map((m) => (
+                <MatchCard key={m.id} match={m} showLeague={false} />
               ))}
             </div>
           ) : (
@@ -89,8 +95,8 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
         <SectionCard title="Upcoming fixtures">
           {upcomingMatches.length ? (
             <div className="flex flex-col gap-3">
-              {upcomingMatches.map((m) => (
-                <MatchCard key={m.id} match={m} />
+              {upcomingMatches.slice(0, 5).map((m) => (
+                <MatchCard key={m.id} match={m} showLeague={false} />
               ))}
             </div>
           ) : (
@@ -104,9 +110,10 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+    <div className="card-shadow relative overflow-hidden rounded-xl border border-border bg-surface p-4 pt-5">
+      <span aria-hidden className="bg-brand absolute inset-x-0 top-0 h-1" />
+      <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</p>
+      <p className="mt-1 text-3xl font-extrabold tabular-nums text-accent">{value}</p>
     </div>
   );
 }
