@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --atlas-bg: #0b0d12;
+  --atlas-surface: #12151c;
+  --atlas-surface-raised: #171b24;
+  --atlas-border: #232733;
+  --atlas-text: #e9ebf1;
+  --atlas-text-muted: #8b92a3;
+  --atlas-accent: #5b7cff;
+  --atlas-accent-soft: #1a2140;
+  --atlas-positive: #3ecf8e;
+  --atlas-negative: #e5615a;
+  --atlas-gold: #d4af6a;
+}
+
+@theme inline {
+  --color-bg: var(--atlas-bg);
+  --color-surface: var(--atlas-surface);
+  --color-surface-raised: var(--atlas-surface-raised);
+  --color-border: var(--atlas-border);
+  --color-text: var(--atlas-text);
+  --color-text-muted: var(--atlas-text-muted);
+  --color-accent: var(--atlas-accent);
+  --color-accent-soft: var(--atlas-accent-soft);
+  --color-positive: var(--atlas-positive);
+  --color-negative: var(--atlas-negative);
+  --color-gold: var(--atlas-gold);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--atlas-bg);
+  color: var(--atlas-text);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--atlas-accent-soft);
+  color: var(--atlas-text);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--atlas-border);
+  border-radius: 4px;
+}
