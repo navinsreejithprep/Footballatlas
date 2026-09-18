@@ -1,6 +1,6 @@
 // Normalized application models.
 // The UI must only ever consume these types — never raw provider/API responses.
-// This is what makes the data provider swappable (mock <-> football-data.org <-> anything else later).
+// This is what makes the data provider swappable (football-data.org <-> anything else later).
 
 export type LeagueCode = "PL" | "PD" | "SA" | "BL1" | "FL1";
 
@@ -84,10 +84,9 @@ export interface NewsArticle {
  * label what the user is looking at, per the "no silent fake data" rule.
  */
 export interface DataMeta {
-  source: "mock" | "football-data.org";
+  source: "football-data.org";
   fetchedAt: string; // ISO timestamp of when this response was produced
-  isDemo: boolean;
-  note?: string; // e.g. "Live data temporarily unavailable — showing demo data"
+  note?: string; // set when the live call failed, e.g. "Live data temporarily unavailable"
 }
 
 export interface StandingsResult {

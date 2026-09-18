@@ -52,9 +52,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               className="underline decoration-border underline-offset-2 hover:text-text"
             >
               football-data.org
-            </a>{" "}
-            when configured, otherwise demo data is shown. Proprietary indicators (Momentum Index, League DNA,
-            etc.) are Football Atlas&rsquo; own analysis, not official league or federation statistics.
+            </a>
+            ; headlines are from BBC Sport and The Guardian and link to the original articles. Proprietary
+            indicators (Momentum Index, League DNA, etc.) are Football Atlas&rsquo; own analysis, not official
+            league or federation statistics.
           </div>
         </footer>
       </body>

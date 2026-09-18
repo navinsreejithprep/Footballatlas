@@ -8,7 +8,7 @@ Built with Next.js 16 (App Router) + TypeScript + Tailwind CSS.
 
 ## Status
 
-This build runs on **demo data by default** (clearly labeled in the UI) and upgrades automatically to **live data** from [football-data.org](https://www.football-data.org) the moment you set `FOOTBALL_DATA_API_KEY`. Nothing else needs to change — the provider abstraction handles the switch.
+The app shows **only live data** — there is no demo or placeholder data. Scores and standings come from [football-data.org](https://www.football-data.org) (requires `FOOTBALL_DATA_API_KEY`), and headlines come from the public BBC Sport and Guardian football RSS feeds. If a live call fails, the affected section is empty and labeled "Live data unavailable" rather than showing invented numbers.
 
 ## Architecture
 
@@ -17,21 +17,21 @@ lib/football/
   types.ts          # Normalized models — League, Team, Standing, Match, etc.
                      # The UI only ever consumes these, never raw API responses.
   provider.ts        # FootballProvider interface — the contract both providers implement.
-  mock-provider.ts    # Deterministic demo data. Always available, no network calls, no key needed.
   api-provider.ts      # Real data from football-data.org. Server-only — the API key never
                         # reaches the browser. Marked with the `server-only` package so a
                         # client-side import fails the build instead of leaking the key.
+  news-provider.ts     # Football headlines from BBC Sport + The Guardian RSS feeds. Keeps only
+                        # the headline, a short summary and a link to the original article.
   index.ts              # getFootballProvider() — the single entry point pages import.
-                          # Chooses mock vs. real based on env, and wraps the real provider
-                          # so any single failed call falls back to demo data for just that
-                          # call (labeled "Live data temporarily unavailable — showing demo data")
-                          # instead of crashing the page.
+                          # Wraps the real provider so a failed call returns an empty result
+                          # labeled "Live data temporarily unavailable" (and logs why) instead
+                          # of crashing the page or inventing data.
   momentum.ts            # Momentum Index — a Football Atlas proprietary indicator.
                           # Deterministic function of weighted recent form + goal-difference
                           # trend. Documented inline. Never presented as an official stat.
 ```
 
-**Why this matters:** no page or component imports `mock-provider.ts` or `api-provider.ts` directly — everything goes through `getFootballProvider()`. If you later add a paid API (Opta, API-Football, etc.), you write one new file implementing `FootballProvider` and swap it in `index.ts`. The UI never changes.
+**Why this matters:** no page or component imports `api-provider.ts` directly — everything goes through `getFootballProvider()`. If you later add a paid API (Opta, API-Football, etc.), you write one new file implementing `FootballProvider` and swap it in `index.ts`. The UI never changes.
 
 ### Routes
 
@@ -53,7 +53,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. It works immediately with no setup — you'll see a "Demo data" badge throughout.
+Open http://localhost:3000. Scores and standings need `FOOTBALL_DATA_API_KEY` (see below); without it those sections show "Live data unavailable". News works without any key.
 
 ## Connecting real data (football-data.org, free tier)
 
@@ -65,8 +65,8 @@ For **production on Vercel**, don't rely on `.env.local` at all (it never gets d
 
 **Free-tier limits to know:**
 - ~10 requests/minute. The app caches standings for 5 minutes and matches for 1 minute (`next: { revalidate }` in `api-provider.ts`) to stay well under that.
-- The free tier does not include a news endpoint — the Newswire section intentionally stays on demo headlines until you wire in a real news source (NewsAPI, RSS, etc.) as a separate provider.
-- If a request fails or you hit a rate limit, the app automatically falls back to demo data for that one call rather than showing a broken page.
+- The free tier does not include a news endpoint, so the Newswire section reads the BBC Sport and Guardian football RSS feeds instead (cached for 10 minutes). Headlines link to the original articles.
+- If a request fails or you hit a rate limit, that section shows "Live data unavailable" until the next refresh — the app never substitutes demo data. The reason is logged as `[football] ...` (in Vercel: Deployment → Logs).
 
 ## Deploying
 
@@ -77,7 +77,7 @@ From inside this folder:
 ```bash
 git init
 git add .
-git commit -m "Football Atlas: Next.js app with mock/live provider architecture"
+git commit -m "Football Atlas: Next.js football dashboard"
 git branch -M main
 git remote add origin https://github.com/<your-username>/<your-repo>.git
 git push -u origin main
@@ -91,7 +91,7 @@ Make sure `index.html`-style confusion doesn't apply here: this is a Next.js app
 2. Framework Preset: Vercel auto-detects **Next.js** — leave it as-is (don't override to "Other").
 3. Root Directory: leave as `.` (the repo root) — do **not** set it to a subfolder. If `package.json` sits at the top level of your repo (it does, once you push this folder's contents), the root directory is correct by default.
 4. Build Command / Output Directory: leave both on their Next.js defaults (empty).
-5. **Environment Variables** → add `FOOTBALL_DATA_API_KEY` with your key. Without it, the deployed site still works fine — it just serves demo data.
+5. **Environment Variables** → add `FOOTBALL_DATA_API_KEY` with your key. Without it, scores and standings show "Live data unavailable".
 6. Deploy.
 
 ### If you ever see "This page could not be found" on Vercel again
@@ -105,7 +105,6 @@ That error means Vercel couldn't find a matching route for the URL you hit — f
 ## What's next (per the original product spec)
 
 Deliberately not built in this pass, to keep the first deployable version focused:
-- Real news provider (Newswire currently shows demo headlines only)
 - Full squads / player statistics
 - League DNA, European Power Map, Weekend Radar analytical views
 - User accounts, favourites, Command Center, saved research

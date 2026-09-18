@@ -1,90 +1,79 @@
 import "server-only";
 import type { FootballProvider, GetMatchesParams } from "./provider";
-import type { StandingsResult, MatchesResult, TeamResult, NewsArticle, LeagueCode } from "./types";
-import { mockFootballProvider } from "./mock-provider";
+import { LEAGUES } from "./types";
+import type { DataMeta, LeagueCode, MatchesResult, StandingsResult, TeamResult } from "./types";
 import { footballDataOrgProvider } from "./api-provider";
 
 /**
  * Single entry point for every page/route. Pages must import
- * `getFootballProvider()` from here — never mock-provider.ts or
- * api-provider.ts directly — so the data source stays swappable.
+ * `getFootballProvider()` from here — never api-provider.ts directly —
+ * so the data source stays swappable.
  *
- * Behavior:
- * - No FOOTBALL_DATA_API_KEY set -> mock provider only (clearly labeled demo).
- * - Key set -> try football-data.org per call; on failure, fall back to
- *   mock data for that one call and stamp the response so the UI can show
- *   "Live data temporarily unavailable — showing demo data" instead of
- *   silently pretending stale/fake data is live.
+ * Behavior: every call goes to the live source. No demo or placeholder data
+ * is ever substituted. If a call fails (rate limit, missing key, network) the
+ * result is empty and `meta.note` says live data is unavailable, so the UI
+ * shows an honest empty state instead of crashing or showing invented numbers.
  */
 
-let cached: FootballProvider | null = null;
+const UNAVAILABLE_NOTE = "Live data temporarily unavailable";
 
-// The fallbacks below hide failures from the UI, so record why they happened
-// (rate limit, bad key, network) where Vercel's runtime logs can show it.
-function logFallback(scope: string, err: unknown) {
-  console.error(`[football] ${scope} failed, using demo data:`, err instanceof Error ? err.message : err);
+function unavailableMeta(): DataMeta {
+  return { source: "football-data.org", fetchedAt: new Date().toISOString(), note: UNAVAILABLE_NOTE };
 }
 
-function withFallback(real: FootballProvider): FootballProvider {
-  return {
-    sourceName: real.sourceName,
-    async getLeagues() {
-      try {
-        return await real.getLeagues();
-      } catch (err) {
-        logFallback("getLeagues", err);
-        return mockFootballProvider.getLeagues();
-      }
-    },
-    async getStandings(code: LeagueCode): Promise<StandingsResult> {
-      try {
-        return await real.getStandings(code);
-      } catch (err) {
-        logFallback(`getStandings(${code})`, err);
-        const fallback = await mockFootballProvider.getStandings(code);
-        return { ...fallback, meta: { ...fallback.meta, note: "Live data temporarily unavailable — showing demo data" } };
-      }
-    },
-    async getMatches(params: GetMatchesParams): Promise<MatchesResult> {
-      try {
-        return await real.getMatches(params);
-      } catch (err) {
-        logFallback("getMatches", err);
-        const fallback = await mockFootballProvider.getMatches(params);
-        return { ...fallback, meta: { ...fallback.meta, note: "Live data temporarily unavailable — showing demo data" } };
-      }
-    },
-    async getTeam(teamId: string): Promise<TeamResult | null> {
-      try {
-        const result = await real.getTeam(teamId);
-        if (result) return result;
-        return mockFootballProvider.getTeam(teamId);
-      } catch (err) {
-        logFallback(`getTeam(${teamId})`, err);
-        return mockFootballProvider.getTeam(teamId);
-      }
-    },
-    async getNews(): Promise<NewsArticle[]> {
-      try {
-        const news = await real.getNews();
-        return news.length ? news : mockFootballProvider.getNews();
-      } catch (err) {
-        logFallback("getNews", err);
-        return mockFootballProvider.getNews();
-      }
-    },
-  };
+// The UI only sees an empty result, so record why it failed where Vercel's
+// runtime logs can show it (rate limit, bad key, network).
+function logFailure(scope: string, err: unknown) {
+  console.error(`[football] ${scope} failed:`, err instanceof Error ? err.message : err);
 }
+
+const provider: FootballProvider = {
+  sourceName: footballDataOrgProvider.sourceName,
+
+  getLeagues: () => footballDataOrgProvider.getLeagues(),
+
+  async getStandings(code: LeagueCode): Promise<StandingsResult> {
+    try {
+      return await footballDataOrgProvider.getStandings(code);
+    } catch (err) {
+      logFailure(`getStandings(${code})`, err);
+      const { name, country } = LEAGUES[code];
+      return { league: { code, name, country, season: "" }, standings: [], meta: unavailableMeta() };
+    }
+  },
+
+  async getMatches(params: GetMatchesParams): Promise<MatchesResult> {
+    try {
+      return await footballDataOrgProvider.getMatches(params);
+    } catch (err) {
+      logFailure("getMatches", err);
+      return { matches: [], meta: unavailableMeta() };
+    }
+  },
+
+  // Null means the team doesn't exist. A failed call throws so the page can
+  // say data is unavailable instead of claiming the team wasn't found.
+  async getTeam(teamId: string): Promise<TeamResult | null> {
+    try {
+      return await footballDataOrgProvider.getTeam(teamId);
+    } catch (err) {
+      logFailure(`getTeam(${teamId})`, err);
+      throw err;
+    }
+  },
+
+  async getNews() {
+    try {
+      return await footballDataOrgProvider.getNews();
+    } catch (err) {
+      logFailure("getNews", err);
+      return [];
+    }
+  },
+};
 
 export function getFootballProvider(): FootballProvider {
-  if (cached) return cached;
-
-  if (process.env.FOOTBALL_DATA_API_KEY) {
-    cached = withFallback(footballDataOrgProvider);
-  } else {
-    cached = mockFootballProvider;
-  }
-  return cached;
+  return provider;
 }
 
 export type { FootballProvider };

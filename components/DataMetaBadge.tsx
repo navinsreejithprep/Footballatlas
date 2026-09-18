@@ -1,7 +1,7 @@
 import type { DataMeta } from "@/lib/football/types";
 
 export function DataMetaBadge({ meta }: { meta: DataMeta }) {
-  const isLive = !meta.isDemo && !meta.note;
+  const isLive = !meta.note;
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       <span
@@ -18,7 +18,7 @@ export function DataMetaBadge({ meta }: { meta: DataMeta }) {
             isLive ? "bg-positive" : "bg-gold",
           ].join(" ")}
         />
-        {isLive ? "Live data · football-data.org" : "Demo data"}
+        {isLive ? "Live data · football-data.org" : "Live data unavailable"}
       </span>
       {meta.note && <span className="text-text-muted">{meta.note}</span>}
       <span className="text-text-muted">

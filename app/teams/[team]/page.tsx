@@ -11,7 +11,17 @@ export const revalidate = 60;
 export default async function TeamPage({ params }: { params: Promise<{ team: string }> }) {
   const { team: teamId } = await params;
   const provider = getFootballProvider();
-  const result = await provider.getTeam(teamId);
+  let result;
+  try {
+    result = await provider.getTeam(teamId);
+  } catch {
+    return (
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Team data unavailable</h1>
+        <p className="text-sm text-text-muted">Live data is temporarily unavailable. Please try again in a minute.</p>
+      </div>
+    );
+  }
 
   if (!result) notFound();
 

@@ -121,7 +121,9 @@ async function NewsPreview() {
     <ul className="flex flex-col gap-3">
       {news.slice(0, 4).map((n) => (
         <li key={n.id} className="border-b border-border/60 pb-3 last:border-b-0 last:pb-0">
-          <p className="text-sm font-medium">{n.headline}</p>
+          <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:text-accent hover:underline">
+            {n.headline}
+          </a>
           <p className="mt-0.5 text-xs text-text-muted">
             {n.source} · {new Date(n.publishedAt).toLocaleDateString()} · {n.category}
           </p>

@@ -14,6 +14,7 @@ import type {
   DataMeta,
 } from "./types";
 import { LEAGUES } from "./types";
+import { getFootballNews } from "./news-provider";
 
 /**
  * FootballDataOrgProvider
@@ -27,11 +28,20 @@ import { LEAGUES } from "./types";
  * - Rate limit is low (roughly 10 requests/minute) — callers should
  *   cache aggressively (see `next: { revalidate }` below) rather than
  *   fan out many requests per page load.
- * - News is NOT covered by this API — getNews() intentionally returns
- *   an empty array here; the app falls back to demo news for that section.
+ * - News is NOT covered by this API — getNews() reads public RSS feeds
+ *   instead (see news-provider.ts).
  */
 
 const BASE_URL = "https://api.football-data.org/v4";
+
+class FootballApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+  }
+}
 
 function apiKey(): string | undefined {
   return process.env.FOOTBALL_DATA_API_KEY;
@@ -47,7 +57,7 @@ async function fdFetch<T>(path: string, revalidateSeconds: number): Promise<T> {
     next: { revalidate: revalidateSeconds },
   });
   if (!res.ok) {
-    throw new Error(`football-data.org request failed (${res.status}) for ${path}`);
+    throw new FootballApiError(`football-data.org request failed (${res.status}) for ${path}`, res.status);
   }
   return res.json() as Promise<T>;
 }
@@ -56,7 +66,6 @@ function meta(note?: string): DataMeta {
   return {
     source: "football-data.org",
     fetchedAt: new Date().toISOString(),
-    isDemo: false,
     note,
   };
 }
@@ -282,15 +291,15 @@ export const footballDataOrgProvider: FootballProvider = {
         upcomingMatches: allMatches.filter((m) => m.status === "SCHEDULED" || m.status === "TIMED"),
         meta: meta(),
       };
-    } catch {
-      return null;
+    } catch (err) {
+      // Only a genuinely unknown team is "not found"; anything else (rate limit,
+      // network) must surface as a failure rather than a misleading 404.
+      if (err instanceof FootballApiError && err.status === 404) return null;
+      throw err;
     }
   },
 
   async getNews(): Promise<NewsArticle[]> {
-    // football-data.org has no news endpoint. Wire a dedicated news
-    // provider here later; for now the resilient wrapper falls back
-    // to demo news for this one method.
-    return [];
+    return getFootballNews();
   },
 };
